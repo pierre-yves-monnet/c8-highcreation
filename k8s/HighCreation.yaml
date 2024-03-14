@@ -13,29 +13,16 @@ spec:
     metadata:
       labels:
         app: highcreation
-      annotations:
-        prometheus.io/scrape: "true"
-        prometheus.io/port: "8088"
-        prometheus.io/path: "/actuator/prometheus"
     spec:
       containers:
         - name: highcreation
           image: ghcr.io/pierre-yves-monnet/c8-highcreation:latest
           imagePullPolicy: Always
-          env:
-            - name: JAVA_TOOL_OPTIONS
-              value: >-
-                -Dautomator.servers.camunda7.name="camunda7Local"
-                -Dautomator.servers.camunda7.url=http://camunda7:8080/engine-rest
-                -Dautomator.startup.scenarioPath=/app/scenarii/loadtest
-                -Dautomator.startup.scenarioAtStartup=C7SimpleTask.json
-                -Dautomator.startup.policyExecution=DEPLOYPROCESS|WARMINGUP|CREATION
-                -Dautomator.startup.logLevel=MAIN
 
           resources:
             limits:
               cpu: 1
-              memory: 2Gi
+              memory: 512M
             requests:
               cpu: 1
-              memory: 1Gi
+              memory: 512M

@@ -3,7 +3,6 @@ package com.camunda.highcreation;
 import com.camunda.highcreation.worker.CheckUniqueTidWorker;
 import com.camunda.highcreation.worker.GenerateTrafficWorker;
 import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.api.command.CreateProcessInstanceCommandStep1;
 import io.camunda.zeebe.client.api.worker.JobWorker;
 import io.camunda.zeebe.client.impl.oauth.OAuthCredentialsProvider;
 import io.camunda.zeebe.client.impl.oauth.OAuthCredentialsProviderBuilder;
@@ -13,12 +12,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 import java.time.Duration;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 import java.util.Scanner;
 
 @SpringBootApplication
@@ -118,7 +111,7 @@ public class HighCreationApplication {
       logger.info("Local connection");
     }
 
-    if (client==null)
+    if (client == null)
       return;
 
     JobWorker checkUniqueTid = null;
@@ -132,7 +125,10 @@ public class HighCreationApplication {
       checkUniqueTid = client.newWorker().jobType("check-unique-tid").handler(new CheckUniqueTidWorker()).open();
       generateTraffic = client.newWorker().jobType("generate-traffic").handler(new GenerateTrafficWorker()).open();
 
-      createProcessInstances(client, 10000, true,"DuplicateIssue", null);
+      long beginTimeOperation = System.currentTimeMillis();
+      GenerateProcessInstance generateProcessInstance = new GenerateProcessInstance(client, 10000, true,
+          "DuplicateIssue", null, beginTimeOperation);
+      generateProcessInstance.createProcessInstances();
 
       // org.camunda.training.SpringApplication.run(PaymentApplication.class, args);
 
@@ -152,76 +148,6 @@ public class HighCreationApplication {
         generateTraffic.close();
 
     }
-  }
-
-  // private static final String ZEEBEMULTITENANCY_TENANT_ID = "<default>";
-  // private static final boolean ZEEBEMULTITENANCY_SECURE_CONNECTION = false;
-  // private static final String ZEEBEMULTITENANCY_CAMUNDA_CREDENTIALS_SCOPES = "Zeebe";
-  // private static final String ZEEBEMULTITENANCY_CAMUNDA_OAUTH_URL = "http://localhost:18080/auth/realms/camunda-platform/protocol/openid-connect/token";
-
-  /**
-   * Create a process intances
-   *
-   * @param zeebeClient zeebeClient
-   * @param processId   processID where the instance must be created
-   * @param tenantId    tenant (if ZeebeConnectionMode == ZEEBECONNECTION.MULTITENANCY and tenantId !=null
-   */
-  public static void createProcessInstances(ZeebeClient zeebeClient,
-                                            int numberOfProcess,
-                                            boolean withResult,
-                                            String processId,
-                                            String tenantId) {
-    long beg = System.currentTimeMillis();
-    List<Integer> listTraffic = new ArrayList<>();
-    for (int i = 0; i < 100; i++) {
-      listTraffic.add(i);
-    }
-
-    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
-
-    // Format the date and time into a string
-    String base = LocalDateTime.now().format(formatter);
-
-    logger.info("Start generate {}", numberOfProcess, processId, tenantId);
-
-    for (int i = 0; i < numberOfProcess; i++)
-      try {
-        Map<String, Object> variables = new HashMap<>();
-        variables.put("tid", base + "-" + i);
-        variables.put("listTraffic", listTraffic);
-        CreateProcessInstanceCommandStep1.CreateProcessInstanceCommandStep3 processInstanceStep3 = zeebeClient.newCreateInstanceCommand()
-            .bpmnProcessId(processId)
-            .latestVersion()
-            .variables(variables);
-
-        if (zeebeConnectionMode.equals(ZEEBECONNECTION.MULTITENANCY) && tenantId != null) {
-          processInstanceStep3 = processInstanceStep3.tenantId(tenantId);
-        }
-
-        // We use the join to force the callback, and then generate a duplicate PI
-        if (withResult)
-          processInstanceStep3.withResult().requestTimeout(Duration.ofMillis(1000*5)).send().join();
-        else
-           processInstanceStep3.send().join();
-
-
-
-
-        if (i % 100 == 0) {
-          long currentDelay = System.currentTimeMillis() - beg;
-          if (currentDelay == 0)
-            currentDelay = 1;
-          logger.info("... generate {} in {} ms ( {}/s)", i, currentDelay, i / (currentDelay/1000));
-        }
-
-      } catch (Exception e) {
-        logger.error("ERROR Create PI in Process[{}] Tenant[{}] : {}", processId, tenantId, e.getMessage());
-        return;
-      }
-    long end = System.currentTimeMillis();
-
-    logger.info("Create {} in {} ms ", numberOfProcess, end - beg);
-
   }
 
   public enum ZEEBECONNECTION {LOCAL, IDENTITY, CLOUD, MULTITENANCY}

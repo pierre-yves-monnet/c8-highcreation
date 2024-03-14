@@ -14,11 +14,16 @@ public class GenerateTrafficWorker implements JobHandler {
   @Override
   public void handle(JobClient jobClient, ActivatedJob job) throws Exception {
     count++;
-    if (count % 100 == 0)
+    if (count % 1000 == 0)
       logger.info("GenerateTrafficWorker:Managed {} jobs", count);
 
     // Complete the Job
-    jobClient.newCompleteCommand(job.getKey()).send().join();
+    try {
+      jobClient.newCompleteCommand(job.getKey()).send().join();
+    } catch (Exception e) {
+      logger.debug("Error during complete job {}", e.getMessage());
+    }
+
   }
 }
 
