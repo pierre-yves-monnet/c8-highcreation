@@ -60,7 +60,7 @@ public class GenerateProcessInstance {
     base = LocalDateTime.now().format(formatter);
 
     logger.info("Start generate {}", numberOfProcess, processId, tenantId);
-    ExecutorService executor = Executors.newFixedThreadPool(50);
+    ExecutorService executor = Executors.newFixedThreadPool(80);
 
     for (int i = 0; i < numberOfProcess; i++) {
       try {

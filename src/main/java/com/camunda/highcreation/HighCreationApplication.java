@@ -126,8 +126,12 @@ public class HighCreationApplication {
       generateTraffic = client.newWorker().jobType("generate-traffic").handler(new GenerateTrafficWorker()).open();
 
       long beginTimeOperation = System.currentTimeMillis();
-      GenerateProcessInstance generateProcessInstance = new GenerateProcessInstance(client, 10000, true,
-          "DuplicateIssue", null, beginTimeOperation);
+      GenerateProcessInstance generateProcessInstance = new GenerateProcessInstance(client, // client
+          10000, // number of PI
+          true, // withResult
+          "DuplicateIssue", // processID
+          null, // tenant
+          beginTimeOperation); // begin time operation
       generateProcessInstance.createProcessInstances();
 
       // org.camunda.training.SpringApplication.run(PaymentApplication.class, args);

@@ -6,16 +6,15 @@
     </bpmn:startEvent>
     <bpmn:sequenceFlow id="Flow_1vjex2z" sourceRef="StartEvent_1" targetRef="Activity_0mnyfxc" />
     <bpmn:sequenceFlow id="Flow_0g9caz2" sourceRef="Activity_0mnyfxc" targetRef="Activity_1ebco04" />
-    <bpmn:sequenceFlow id="Flow_1y1iw80" sourceRef="Activity_1ebco04" targetRef="Event_1h7e6in" />
     <bpmn:endEvent id="Event_1h7e6in">
-      <bpmn:incoming>Flow_1y1iw80</bpmn:incoming>
+      <bpmn:incoming>Flow_0cqpjl7</bpmn:incoming>
     </bpmn:endEvent>
     <bpmn:serviceTask id="Activity_1ebco04" name="Traffic1">
       <bpmn:extensionElements>
         <zeebe:taskDefinition type="generate-traffic" />
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_0g9caz2</bpmn:incoming>
-      <bpmn:outgoing>Flow_1y1iw80</bpmn:outgoing>
+      <bpmn:outgoing>Flow_1fcq3fr</bpmn:outgoing>
       <bpmn:multiInstanceLoopCharacteristics>
         <bpmn:extensionElements>
           <zeebe:loopCharacteristics inputCollection="=listTraffic" inputElement="traffic" />
@@ -54,6 +53,12 @@
       <bpmn:incoming>Flow_0wcqnsa</bpmn:incoming>
     </bpmn:endEvent>
     <bpmn:sequenceFlow id="Flow_0wcqnsa" sourceRef="Activity_1jv9x00" targetRef="Event_084ixpz" />
+    <bpmn:userTask id="Activity_0f4ou9j" name="Check Ok">
+      <bpmn:incoming>Flow_1fcq3fr</bpmn:incoming>
+      <bpmn:outgoing>Flow_0cqpjl7</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:sequenceFlow id="Flow_1fcq3fr" sourceRef="Activity_1ebco04" targetRef="Activity_0f4ou9j" />
+    <bpmn:sequenceFlow id="Flow_0cqpjl7" sourceRef="Activity_0f4ou9j" targetRef="Event_1h7e6in" />
   </bpmn:process>
   <bpmndi:BPMNDiagram id="BPMNDiagram_1">
     <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="DuplicateIssue">
@@ -74,8 +79,11 @@
       <bpmndi:BPMNShape id="Event_084ixpz_di" bpmnElement="Event_084ixpz">
         <dc:Bounds x="602" y="222" width="36" height="36" />
       </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1spb3ei_di" bpmnElement="Activity_0f4ou9j">
+        <dc:Bounds x="700" y="77" width="100" height="80" />
+      </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Event_1h7e6in_di" bpmnElement="Event_1h7e6in">
-        <dc:Bounds x="712" y="99" width="36" height="36" />
+        <dc:Bounds x="902" y="99" width="36" height="36" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Activity_018z2ga_di" bpmnElement="Activity_00zfxoi" isExpanded="true">
         <dc:Bounds x="190" y="360" width="350" height="200" />
@@ -104,10 +112,6 @@
         <di:waypoint x="420" y="117" />
         <di:waypoint x="530" y="117" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_1y1iw80_di" bpmnElement="Flow_1y1iw80">
-        <di:waypoint x="630" y="117" />
-        <di:waypoint x="712" y="117" />
-      </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_1ehvjl3_di" bpmnElement="Flow_1ehvjl3">
         <di:waypoint x="380" y="175" />
         <di:waypoint x="380" y="240" />
@@ -116,6 +120,14 @@
       <bpmndi:BPMNEdge id="Flow_0wcqnsa_di" bpmnElement="Flow_0wcqnsa">
         <di:waypoint x="550" y="240" />
         <di:waypoint x="602" y="240" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1fcq3fr_di" bpmnElement="Flow_1fcq3fr">
+        <di:waypoint x="630" y="117" />
+        <di:waypoint x="700" y="117" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0cqpjl7_di" bpmnElement="Flow_0cqpjl7">
+        <di:waypoint x="800" y="117" />
+        <di:waypoint x="902" y="117" />
       </bpmndi:BPMNEdge>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>
