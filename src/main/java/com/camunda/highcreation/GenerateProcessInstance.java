@@ -2,6 +2,7 @@ package com.camunda.highcreation;
 
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.command.CreateProcessInstanceCommandStep1;
+import io.camunda.zeebe.client.api.response.ProcessInstanceResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -22,6 +23,7 @@ public class GenerateProcessInstance {
   ZeebeClient zeebeClient;
   String base;
   boolean withResult;
+  int numberOfSecondToWait;
   String processId;
   long beginTimeOperation;
   String tenantId;
@@ -31,36 +33,33 @@ public class GenerateProcessInstance {
   GenerateProcessInstance(ZeebeClient zeebeClient,
                           int numberOfProcess,
                           boolean withResult,
+                          int numberOfSecondToWait,
                           String processId,
                           String tenantId,
                           long beginTimeOperation) {
     this.zeebeClient = zeebeClient;
     this.numberOfProcess = numberOfProcess;
     this.withResult = withResult;
+    this.numberOfSecondToWait = numberOfSecondToWait;
     this.processId = processId;
     this.beginTimeOperation = beginTimeOperation;
     this.tenantId = tenantId;
 
   }
 
-
   /**
    * Create a process intances
    */
   public void createProcessInstances() {
     long beg = System.currentTimeMillis();
-    List<Integer> listTraffic = new ArrayList<>();
-    for (int i = 0; i < 20; i++) {
-      listTraffic.add(i);
-    }
 
     DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss");
 
     // Format the date and time into a string
     base = LocalDateTime.now().format(formatter);
 
-    logger.info("Start generate {}", numberOfProcess, processId, tenantId);
-    ExecutorService executor = Executors.newFixedThreadPool(80);
+    logger.info("Start generate {} processId [{}] tenantId[{}]", numberOfProcess, processId, tenantId);
+    ExecutorService executor = Executors.newFixedThreadPool(50);
 
     for (int i = 0; i < numberOfProcess; i++) {
       try {
@@ -69,7 +68,6 @@ public class GenerateProcessInstance {
 
       } catch (Exception e) {
         logger.error("ERROR Create PI in Process[{}] Tenant[{}] : {}", processId, tenantId, e.getMessage());
-        continue;
       }
     }
 
@@ -83,11 +81,10 @@ public class GenerateProcessInstance {
    * StartProcessinstance in a runnable
    */
   static class StartProcessInstance implements Runnable {
-    int index = 0;
+    int index;
     GenerateProcessInstance generateProcessInstance;
 
-    StartProcessInstance(int index,
-                         GenerateProcessInstance generateProcessInstance) {
+    StartProcessInstance(int index, GenerateProcessInstance generateProcessInstance) {
       this.index = index;
       this.generateProcessInstance = generateProcessInstance;
     }
@@ -112,7 +109,6 @@ public class GenerateProcessInstance {
         generateProcessInstance.registerCreation.put(tid, Long.valueOf(0));
       }
 
-
       Map<String, Object> variables = new HashMap<>();
       variables.put("tid", tid);
       variables.put("listTraffic", listTraffic);
@@ -125,8 +121,30 @@ public class GenerateProcessInstance {
       if (generateProcessInstance.tenantId != null) {
         processInstanceStep3 = processInstanceStep3.tenantId(generateProcessInstance.tenantId);
       }
+
+      // ------------------ withResult
       if (generateProcessInstance.withResult) {
-        processInstanceStep3.withResult().requestTimeout(Duration.ofMillis(1000 * 5)).send().join();
+
+        long startTime = System.currentTimeMillis();
+        ProcessInstanceResult result = null;
+        String exception = null;
+        try {
+          result = processInstanceStep3.withResult()
+              .requestTimeout(Duration.ofMillis(1000L * generateProcessInstance.numberOfSecondToWait))
+              .send()
+              .join();
+        } catch (Exception e) {
+          exception = e.getMessage();
+        }
+        long endTime = System.currentTimeMillis();
+        // we give 150 ms margin, time to get the answer from Zeebe
+        if (endTime - startTime > 150L + 1000L * generateProcessInstance.numberOfSecondToWait) {
+          logger.error("OVERTIME the timeout {}s : {} ms result? [{}] exception? [{}] ",
+              generateProcessInstance.numberOfSecondToWait, endTime - startTime,
+              (result != null ? result.getProcessInstanceKey() : "null"), exception);
+        }
+
+        // ------------------ normal
       } else
         processInstanceStep3.send().join();
 

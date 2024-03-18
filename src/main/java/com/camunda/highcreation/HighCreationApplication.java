@@ -48,7 +48,7 @@ public class HighCreationApplication {
 
   public static void main(String[] args) {
 
-    ZeebeClient client = null;
+    ZeebeClient zeebeClient = null;
 
     // JDK 11 form
     if (zeebeConnectionMode.equals(ZEEBECONNECTION.IDENTITY)) {
@@ -59,7 +59,7 @@ public class HighCreationApplication {
           .clientSecret(ZEEBEIDENTITY_CLIENT_SECRET)
           .build();
 
-      client = ZeebeClient.newClientBuilder()
+      zeebeClient = ZeebeClient.newClientBuilder()
           .gatewayAddress(ZEEBEMULTITENANCY_ZEEBE_BROKER_GATEWAY_ADDRESS)
           .credentialsProvider(credentialsProvider)
           .usePlaintext()
@@ -75,7 +75,7 @@ public class HighCreationApplication {
           .clientSecret(ZEEBEIDENTITY_CLIENT_SECRET)
           .build();
 
-      client = ZeebeClient.newClientBuilder()
+      zeebeClient = ZeebeClient.newClientBuilder()
           .gatewayAddress(ZEEBEMULTITENANCY_ZEEBE_BROKER_GATEWAY_ADDRESS)
           .credentialsProvider(credentialsProvider)
           .usePlaintext()
@@ -92,7 +92,7 @@ public class HighCreationApplication {
           .clientSecret(ZEEBECLOUD_CLIENT_SECRET)
           .build();
 
-      client = ZeebeClient.newClientBuilder()
+      zeebeClient = ZeebeClient.newClientBuilder()
           .gatewayAddress(ZEEBECLOUD_ADDRESS)
           .credentialsProvider(credentialsProvider)
           .build();
@@ -100,7 +100,7 @@ public class HighCreationApplication {
     }
 
     if (zeebeConnectionMode.equals(ZEEBECONNECTION.LOCAL)) {
-      client = ZeebeClient.newClientBuilder()
+      zeebeClient = ZeebeClient.newClientBuilder()
           .gatewayAddress(ZEEBE_BROKER_GATEWAY_ADDRESS)
           .usePlaintext()
           .defaultJobWorkerMaxJobsActive(10)
@@ -111,7 +111,7 @@ public class HighCreationApplication {
       logger.info("Local connection");
     }
 
-    if (client == null)
+    if (zeebeClient == null)
       return;
 
     JobWorker checkUniqueTid = null;
@@ -119,22 +119,21 @@ public class HighCreationApplication {
 
     try {
       // Request the Cluster Topology
-      logger.info("Connected to: " + client.newTopologyRequest().send().join());
+      logger.info("Connected to: {} ", zeebeClient.newTopologyRequest().send().join());
 
       // Start a Job Worker
-      checkUniqueTid = client.newWorker().jobType("check-unique-tid").handler(new CheckUniqueTidWorker()).open();
-      generateTraffic = client.newWorker().jobType("generate-traffic").handler(new GenerateTrafficWorker()).open();
+      checkUniqueTid = zeebeClient.newWorker().jobType("check-unique-tid").handler(new CheckUniqueTidWorker()).open();
+      generateTraffic = zeebeClient.newWorker().jobType("generate-traffic").handler(new GenerateTrafficWorker()).open();
 
       long beginTimeOperation = System.currentTimeMillis();
-      GenerateProcessInstance generateProcessInstance = new GenerateProcessInstance(client, // client
+      GenerateProcessInstance generateProcessInstance = new GenerateProcessInstance(zeebeClient, // client
           10000, // number of PI
           true, // withResult
+          2,
           "DuplicateIssue", // processID
           null, // tenant
           beginTimeOperation); // begin time operation
       generateProcessInstance.createProcessInstances();
-
-      // org.camunda.training.SpringApplication.run(PaymentApplication.class, args);
 
       // Terminate the worker with an Integer input
       Scanner sc = new Scanner(System.in);
