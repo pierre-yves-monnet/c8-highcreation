@@ -126,6 +126,17 @@ public class HighCreationApplication {
       generateTraffic = zeebeClient.newWorker().jobType("generate-traffic").handler(new GenerateTrafficWorker()).open();
 
       long beginTimeOperation = System.currentTimeMillis();
+/*
+      GenerateProcessInstance generateProcessInstance = new GenerateProcessInstance(zeebeClient, // client
+          10000, // number of PI
+          false, // withResult
+          2, // wait this time on the withResult
+          100, // number of thread in parallel
+          "DuplicateIssue", // processID
+          null, // tenant
+          beginTimeOperation); // begin time operation
+*/
+
       GenerateProcessInstance generateProcessInstance = new GenerateProcessInstance(zeebeClient, // client
           10000, // number of PI
           true, // withResult
@@ -134,6 +145,7 @@ public class HighCreationApplication {
           "DuplicateIssue", // processID
           null, // tenant
           beginTimeOperation); // begin time operation
+
       generateProcessInstance.createProcessInstances();
 
       // Terminate the worker with an Integer input
