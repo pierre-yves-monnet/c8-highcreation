@@ -129,7 +129,8 @@ public class HighCreationApplication {
       GenerateProcessInstance generateProcessInstance = new GenerateProcessInstance(zeebeClient, // client
           10000, // number of PI
           true, // withResult
-          2,
+          2, // wait this time on the withResult
+          50, // number of thread in parallel
           "DuplicateIssue", // processID
           null, // tenant
           beginTimeOperation); // begin time operation

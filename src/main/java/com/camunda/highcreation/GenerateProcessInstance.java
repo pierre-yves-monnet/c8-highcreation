@@ -15,15 +15,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadPoolExecutor;
 
 public class GenerateProcessInstance {
   static Logger logger = LoggerFactory.getLogger(GenerateProcessInstance.class);
 
-  int numberOfProcess;
+  int numberOfProcessInstance;
   ZeebeClient zeebeClient;
   String base;
   boolean withResult;
   int numberOfSecondToWait;
+  int threadsInParallel;
   String processId;
   long beginTimeOperation;
   String tenantId;
@@ -34,16 +36,18 @@ public class GenerateProcessInstance {
                           int numberOfProcess,
                           boolean withResult,
                           int numberOfSecondToWait,
+                          int threadsInParallel,
                           String processId,
                           String tenantId,
                           long beginTimeOperation) {
     this.zeebeClient = zeebeClient;
-    this.numberOfProcess = numberOfProcess;
+    this.numberOfProcessInstance = numberOfProcess;
     this.withResult = withResult;
     this.numberOfSecondToWait = numberOfSecondToWait;
     this.processId = processId;
     this.beginTimeOperation = beginTimeOperation;
     this.tenantId = tenantId;
+    this.threadsInParallel = threadsInParallel;
 
   }
 
@@ -58,10 +62,10 @@ public class GenerateProcessInstance {
     // Format the date and time into a string
     base = LocalDateTime.now().format(formatter);
 
-    logger.info("Start generate {} processId [{}] tenantId[{}]", numberOfProcess, processId, tenantId);
-    ExecutorService executor = Executors.newFixedThreadPool(50);
+    logger.info("Start generate {} processId [{}] tenantId[{}]", numberOfProcessInstance, processId, tenantId);
+    ExecutorService executor = Executors.newFixedThreadPool(this.threadsInParallel);
 
-    for (int i = 0; i < numberOfProcess; i++) {
+    for (int i = 0; i < numberOfProcessInstance; i++) {
       try {
 
         executor.execute(new StartProcessInstance(i, this));
@@ -73,7 +77,23 @@ public class GenerateProcessInstance {
 
     long end = System.currentTimeMillis();
 
-    logger.info("Create {} in {} ms ", numberOfProcess, end - beg);
+    logger.info("Generate in ThreadPool {} processInstances in {} ms ", numberOfProcessInstance, end - beg);
+
+    // please wait the queue is empty
+    if (executor instanceof ThreadPoolExecutor) {
+      ThreadPoolExecutor threadPoolExecutor = (ThreadPoolExecutor) executor;
+
+      while (threadPoolExecutor.getQueue().size() > 0){
+        logger.info("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Queue size {} ~~~~~~~~~~~~~~~~~~", threadPoolExecutor.getQueue().size());
+        try {
+          Thread.sleep(10000);
+        } catch (InterruptedException e) {
+        }
+      }
+      logger.info("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Queue is empty! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
+      executor.shutdown();
+    }
+
 
   }
 
@@ -113,6 +133,7 @@ public class GenerateProcessInstance {
       variables.put("tid", tid);
       variables.put("listTraffic", listTraffic);
 
+
       CreateProcessInstanceCommandStep1.CreateProcessInstanceCommandStep3 processInstanceStep3 = generateProcessInstance.zeebeClient.newCreateInstanceCommand()
           .bpmnProcessId(generateProcessInstance.processId)
           .latestVersion()
@@ -133,6 +154,8 @@ public class GenerateProcessInstance {
               .requestTimeout(Duration.ofMillis(1000L * generateProcessInstance.numberOfSecondToWait))
               .send()
               .join();
+          // generateProcessInstance.zeebeClient.newSetVariablesCommand(result.getProcessInstanceKey()).variables(variables).send();
+
         } catch (Exception e) {
           exception = e.getMessage();
         }
